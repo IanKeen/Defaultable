@@ -1,14 +1,11 @@
-import Foundation
-
 extension Defaultable: Decodable where T: Decodable {
     public init(from decoder: Decoder) throws {
         do {
-            let container = try decoder.singleValueContainer()
-            self.value = try container.decode(Default.ValueType.self)
-            
+            self.wrappedValue = try Default.ValueType(from: decoder)
+
         } catch DecodingError.valueNotFound {
-            self.value = Default.default
-            
+            self.wrappedValue = Default.default
+
         } catch let error {
             throw error
         }
@@ -16,8 +13,7 @@ extension Defaultable: Decodable where T: Decodable {
 }
 extension Defaultable: Encodable where T: Encodable {
     public func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        try container.encode(value)
+        try wrappedValue.encode(to: encoder)
     }
 }
 

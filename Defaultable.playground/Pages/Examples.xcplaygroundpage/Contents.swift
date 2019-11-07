@@ -1,4 +1,5 @@
 import Foundation
+
 // example default value provider
 struct FortyTwo<N: Numeric>: DefaultValue {
     static var `default`: N { return 42 }
@@ -6,25 +7,11 @@ struct FortyTwo<N: Numeric>: DefaultValue {
 
 // example model
 struct Model: Codable, Hashable {
-    let bool: Defaultable<Bool, True>
-    let float: Defaultable<Float, Zero<Float>>
-    let int: Defaultable<Int, FortyTwo<Int>>
-    let string: Defaultable<String, EmptyString>
+    @Defaultable<Bool, True> var bool: Bool
+    @Defaultable<Float, Zero<Float>> var float: Float
+    @Defaultable<Int, FortyTwo<Int>> var int: Int
+    @Defaultable<String, EmptyString> var string: String
 }
-
-// literals
-// all defaults
-let a = Model(bool: nil, float: nil, int: nil, string: nil)
-print("A", a)
-
-// all values that _aren't_ the default
-let b = Model(bool: false, float: 3, int: 7, string: "hi")
-print("B", b)
-
-// equatable
-a.bool == b.bool
-Defaultable<Bool, True>(value: nil) == true
-false == Defaultable<Bool, True>(value: false)
 
 // codable
 // decoded using all defaults
@@ -38,10 +25,7 @@ let json = """
 let decodedB = try! JSONDecoder().decode(Model.self, from: json)
 print("DECODED B", decodedB)
 
-// encoded using all defaults
-let encodedA = String(data: try JSONEncoder().encode(a), encoding: .utf8)!
-print("ENCODED A", encodedA)
-
-// encoded using all values that _aren't_ defaults
-let encodedB = String(data: try JSONEncoder().encode(b), encoding: .utf8)!
-print("ENCODED B", encodedB)
+// encoded
+let model = Model(bool: true, float: 111, int: 222, string: "333")
+let encoded = String(data: try JSONEncoder().encode(model), encoding: .utf8)!
+print("ENCODED", encoded)

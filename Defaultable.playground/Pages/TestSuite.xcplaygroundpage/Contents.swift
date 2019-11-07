@@ -1,46 +1,53 @@
 import Foundation
+import XCTest
 
 private struct Model: Codable, Equatable {
-    let single: Defaultable<Bool, True>
-    let array: [Defaultable<Bool, True>]
-    let nested: DefaultableArray<Defaultable<Bool, True>>
+    @Defaultable<Bool, True>
+    var single: Bool
+
+    @DefaultableArray<Bool>
+    var array: [Bool]
 }
+
 private struct Pair {
+    let file: StaticString
+    let line: UInt
     let input: String
-    let expected: TestResult<Model>
-}
-private extension TestCase {
-    static func create(from pair: Pair) -> TestCase<Model> {
-        return .init(
-            after: { try JSONDecoder().decode(Model.self, from: pair.input.data(using: .utf8)!) },
-            expect: pair.expected
-        )
+    let expected: Model
+
+    init(file: StaticString = #file, line: UInt = #line, input: String, expected: Model) {
+        self.file = file
+        self.line = line
+        self.input = input
+        self.expected = expected
     }
 }
 
 private class Tests: XCTestCase {
     func test() throws {
         let pairs = [
+            //Total nil tests
+            Pair(input: "{}", expected: Model(single: true, array: [])),
+
             //Single tests
-            Pair(input: "{\"single\": true, \"array\": []}", expected: .success(Model(single: true, array: [], nested: []))),
-            Pair(input: "{\"single\": false, \"array\": []}", expected: .success(Model(single: false, array: [], nested: []))),
-            Pair(input: "{\"single\": null, \"array\": []}", expected: .success(Model(single: true, array: [], nested: []))),
-            Pair(input: "{\"array\": []}", expected: .success(Model(single: true, array: [], nested: []))),
-            
+            Pair(input: "{\"single\": true, \"array\": []}", expected: Model(single: true, array: [])),
+            Pair(input: "{\"single\": false, \"array\": []}", expected: Model(single: false, array: [])),
+            Pair(input: "{\"single\": null, \"array\": []}", expected: Model(single: true, array: [])),
+            Pair(input: "{\"array\": []}", expected: Model(single: true, array: [])),
+
             //Required array tests
-            Pair(input: "{\"array\": [true, false, null]}", expected: .success(Model(single: true, array: [true, false, true], nested: []))),
-            
-            //Nested array tests
-            Pair(input: "{\"array\": [], \"nested\": []}", expected: .success(Model(single: true, array: [], nested: []))),
-            Pair(input: "{\"array\": [], \"nested\": null}", expected: .success(Model(single: true, array: [], nested: []))),
-            Pair(input: "{\"array\": [], \"nested\": [true, false, null]}", expected: .success(Model(single: true, array: [], nested: [true, false, true]))),
-            ]
-        
-        let tests = pairs.map(TestCase<Model>.create)
-        
-        for test in tests {
-            test.execute()
+            Pair(input: "{\"array\": [true, false]}", expected: Model(single: true, array: [true, false])),
+        ]
+
+        for pair in pairs {
+            do {
+                let value = try JSONDecoder().decode(Model.self, from: pair.input.data(using: .utf8)!)
+                XCTAssertEqual(value, pair.expected, file: pair.file, line: pair.line)
+
+            } catch let error {
+                XCTAssertEqual("\(error)", "\(pair.expected)", file: pair.file, line: pair.line)
+            }
         }
     }
 }
-Tests.run()
+XCTestSuite(forTestCaseClass: Tests.self).run()
